@@ -113,17 +113,17 @@ class Pool:
 
         c = None
 
-        async with self.pool_lock:
-            if len(self.pool) < self.conn_limit:
+        if len(self.pool) < self.conn_limit:
+            async with self.pool_lock:
                 c = Connection(self.host, self.port, self.pool_available, self.loop)
                 await c.acquire()
                 self.pool.append(c)
-            else:
-                for i, connection in enumerate(self.pool):
-                    if not connection.locked():
-                        await connection.acquire()
-                        c = connection
-                        break
+        else:
+            for i, connection in enumerate(self.pool):
+                if not connection.locked():
+                    await connection.acquire()
+                    c = connection
+                    break
 
         return c
 

@@ -14,7 +14,6 @@ class Session:
         self.conn_limit = conn_limit
         self.loop = loop
 
-        self.host_lock = asyncio.Lock(loop=loop)
         self.hosts = {}
 
     async def request(self, method, url, headers=None):
@@ -40,13 +39,12 @@ class Session:
             path += b'?' + parsed_url.query
 
         # Find or create a pool for this host/port/scheme combination.
-        async with self.host_lock:
-            addr = parsed_url.schema + b':' + host + b':' + str(port).encode()
+        addr = parsed_url.schema + b':' + host + b':' + str(port).encode()
 
-            session = self.hosts.get(addr)
-            if not session:
-                session = pool.Pool(host, port, self.conn_limit, self.loop)
-                self.hosts[addr] = session
+        session = self.hosts.get(addr)
+        if not session:
+            session = pool.Pool(host, port, self.conn_limit, self.loop)
+            self.hosts[addr] = session
 
         # Create and send the new HTTP request.
         request = HTTPRequest(await session.connect(), self.request_lock)
