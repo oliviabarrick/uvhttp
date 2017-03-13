@@ -1,4 +1,6 @@
 import asyncio
+import uvloop
+asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
 class Connection:
     """
@@ -40,7 +42,11 @@ class Connection:
         if not self.reader:
             await self.connect()
 
-        return await self.reader.read(num_bytes)
+        data = await self.reader.read(num_bytes)
+        if not data:
+            self.close()
+
+        return data
 
     async def send(self, message):
         """

@@ -4,11 +4,12 @@ import functools
 import time
 
 HEAD = 'HEAD / HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n'
+HEAD_LOW = 'HEAD /low_keepalive HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n'
 GET_404 = 'GET /lol HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n'
 STATUS_404 = b'HTTP/1.1 404 Not Found'
 STATUS_200 = b'HTTP/1.1 200 OK'
 
-def async_func(func):
+def start_loop(func):
     @functools.wraps(func)
     def new_func(*args, **kwargs):
         loop = asyncio.new_event_loop()
@@ -16,7 +17,7 @@ def async_func(func):
 
     return new_func
 
-@async_func
+@start_loop
 async def test_connection(loop):
     pool_available = asyncio.Semaphore(1, loop=loop)
 
@@ -31,7 +32,7 @@ async def test_connection(loop):
     conn.close()
     conn.release()
 
-@async_func
+@start_loop
 async def test_connection_failed(loop):
     pool_available = asyncio.Semaphore(1, loop=loop)
 
@@ -48,7 +49,7 @@ async def test_connection_failed(loop):
     conn.close()
     conn.release()
 
-@async_func
+@start_loop
 async def test_connection_reuse(loop):
     pool_available = asyncio.Semaphore(1, loop=loop)
 
@@ -84,7 +85,24 @@ async def test_connection_reuse(loop):
 
     assert conn.connect_count == 1
 
-@async_func
+@start_loop
+async def test_connection_eof(loop):
+    pool_available = asyncio.Semaphore(1, loop=loop)
+
+    conn = uvhttp.pool.Connection('127.0.0.1', 80, pool_available, loop)
+
+    for _ in range(6):
+        await conn.acquire()
+
+        await conn.send(HEAD_LOW)
+        response = await conn.read(65535)
+        if response:
+            assert response[:len(STATUS_200)] == STATUS_200
+        conn.release()
+
+    assert conn.connect_count == 2
+
+@start_loop
 async def test_pool(loop):
     pool = uvhttp.pool.Pool('127.0.0.1', 80, 2, loop)
 
@@ -126,7 +144,7 @@ async def test_pool(loop):
 
     conn.release()
 
-@async_func
+@start_loop
 async def test_pool_blocks_when_full(loop):
     pool = uvhttp.pool.Pool('127.0.0.1', 80, 2, loop)
 
@@ -184,3 +202,32 @@ async def test_pool_blocks_when_full(loop):
     blocked.result()
 
     assert await pool.stats() == 2
+
+@start_loop
+async def test_pool_benchmark(loop):
+    num_requests = 20000
+
+    async def do_request(pool):
+        conn = await pool.connect()
+
+        await conn.send(HEAD)
+        response = await conn.read(65535)
+        assert response[:len(STATUS_200)] == STATUS_200
+
+        conn.release()
+
+    pool = uvhttp.pool.Pool('127.0.0.1', 80, 10, loop)
+    start_time = time.time()
+
+    tasks = []
+    for j in range(num_requests):
+        task = do_request(pool)
+        task = asyncio.ensure_future(task)
+        tasks.append(task)
+
+    await asyncio.wait(tasks)
+
+    duration = time.time() - start_time
+    print('Test time: {}s, {} rps'.format(duration, num_requests / duration))
+
+    assert await pool.stats() == 10
