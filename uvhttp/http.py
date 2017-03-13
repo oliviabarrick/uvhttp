@@ -1,6 +1,7 @@
 import asyncio
 import urllib
 import urllib.parse
+import httptools
 from uvhttp import pool
 
 class Session:
@@ -26,21 +27,21 @@ class Session:
         await self.request_lock.acquire()
 
         # Parse the URL for the hostname, port, and query string.
-        parsed_url = urllib.parse.urlparse(url)
+        parsed_url = httptools.parse_url(url.encode())
 
         port = parsed_url.port
         if not port:
-            port = 443 if parsed_url.scheme == 'https' else 80
+            port = 443 if parsed_url.schema == b'https' else 80
 
-        host = parsed_url.netloc.split(':')[0]
+        host = parsed_url.host
 
         path = parsed_url.path
         if parsed_url.query:
-            path += '?' + parsed_url.query
+            path += b'?' + parsed_url.query
 
         # Find or create a pool for this host/port/scheme combination.
         async with self.host_lock:
-            addr = parsed_url.scheme + ':' + host + ':' + str(port)
+            addr = parsed_url.schema + b':' + host + b':' + str(port).encode()
 
             session = self.hosts.get(addr)
             if not session:
@@ -80,7 +81,7 @@ class HTTPRequest:
         headers = headers or {}
         headers.update(original_headers)
 
-        request = "{} {} HTTP/1.1\r\n".format(method.upper(), path)
+        request = "{} {} HTTP/1.1\r\n".format(method.upper(), path.decode())
         for header, value in headers.items():
             request += "{}: {}\r\n".format(header, value)
         request += "\r\n"

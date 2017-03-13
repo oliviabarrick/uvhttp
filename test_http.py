@@ -21,7 +21,7 @@ async def test_http_request(loop):
     assert conn.locked()
 
     request = uvhttp.http.HTTPRequest(conn, request_lock)
-    await request.send('HEAD', '/')
+    await request.send('HEAD', b'/')
     response = await request.body()
     assert response[:len(STATUS_200)] == STATUS_200
 
@@ -40,7 +40,7 @@ async def test_http_connection_reuse(loop):
     assert conn.locked()
 
     request = uvhttp.http.HTTPRequest(conn, request_lock)
-    await request.send('HEAD', '/')
+    await request.send('HEAD', b'/')
     response = await request.body()
     assert response[:len(STATUS_200)] == STATUS_200
 
@@ -51,7 +51,7 @@ async def test_http_connection_reuse(loop):
     assert conn.locked()
 
     request = uvhttp.http.HTTPRequest(conn, request_lock)
-    await request.send('GET', '/lol')
+    await request.send('GET', b'/lol')
     response = await request.body()
     assert response[:len(STATUS_404)] == STATUS_404
 
