@@ -53,7 +53,7 @@ async def test_gzipped_http_request(loop):
         assert b'nginx' in response.headers[b'Server']
         assert b'gzip' in response.headers[b'Content-Encoding']
 
-        body = zlib.decompress(response.body, 16 + zlib.MAX_WBITS)
+        body = zlib.decompress(response.content, 16 + zlib.MAX_WBITS)
         assert md5(body) == 'e3eb0a1df437f3f97a64aca5952c8ea0'
 
         assert not conn.lock.locked()
@@ -83,7 +83,7 @@ async def test_http_connection_reuse(loop):
     await request.send(b'GET', b'/lol')
     response = await request.body()
     assert response.status == 404
-    assert md5(response.body) == MD5_404
+    assert md5(response.content) == MD5_404
 
     assert not conn.lock.locked()
 
@@ -101,12 +101,12 @@ async def test_session(loop):
         request = await session.request(b'GET', b'http://127.0.0.1/lol')
         response = await request.body()
         assert response.status == 404
-        assert md5(response.body) == MD5_404
+        assert md5(response.content) == MD5_404
 
         request = await session.request(b'GET', b'http://www.google.com/')
         response = await request.body()
         assert response.status == 301
-        assert md5(response.body) == MD5_GOOGLE
+        assert md5(response.content) == MD5_GOOGLE
 
     assert await session.connections() == 2
 

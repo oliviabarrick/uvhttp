@@ -10,7 +10,7 @@ uvhttp benchmark:
 
 ```
 ➜  uvhttp git:(master) ✗ ./uvhttp.py
-100000 HTTP requests in 3.63 seconds, 27564.66 rps
+100000 HTTP requests in 3.59 seconds, 27843.15 rps
 ➜  uvhttp git:(master) ✗
 ```
 
