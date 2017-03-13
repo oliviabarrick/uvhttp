@@ -5,7 +5,6 @@ import time
 from uvhttp.utils import start_loop, run_workers, NUM_WORKERS
 import uvhttp.http
 
-NUM_COROUTINES = 1000
 NUM_REQUESTS = 100000
 
 @start_loop
@@ -18,7 +17,7 @@ async def main(loop):
         response = await response.body()
 
     num_requests = int(NUM_REQUESTS / NUM_WORKERS)
-    session = uvhttp.http.Session(NUM_COROUTINES, 10, loop)
+    session = uvhttp.http.Session(10, loop)
     tasks = []
 
     for j in range(num_requests):

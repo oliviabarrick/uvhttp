@@ -9,8 +9,7 @@ class Session:
     A Session is an HTTP request pool that allows up to request_limit requests
     in flight at once, with up to conn_limit connections per ip/port.
     """
-    def __init__(self, request_limit, conn_limit, loop):
-        self.request_lock = asyncio.Semaphore(value=request_limit, loop=loop)
+    def __init__(self, conn_limit, loop):
         self.conn_limit = conn_limit
         self.loop = loop
 
@@ -20,10 +19,6 @@ class Session:
         """
         Make a new HTTP request in the pool.
         """
-
-        # Wait for an available request slot to be available (to ensure we
-        # never exceed request_limit requests).
-        await self.request_lock.acquire()
 
         # Parse the URL for the hostname, port, and query string.
         parsed_url = httptools.parse_url(url.encode())
@@ -47,7 +42,7 @@ class Session:
             self.hosts[addr] = session
 
         # Create and send the new HTTP request.
-        request = HTTPRequest(await session.connect(), self.request_lock)
+        request = HTTPRequest(await session.connect())
         await request.send(method, path, headers)
         return request
 
@@ -63,9 +58,8 @@ class HTTPRequest:
     """
     An HTTP request instantiated from a Session.
     """
-    def __init__(self, connection, request_lock):
+    def __init__(self, connection):
         self.connection = connection
-        self.request_lock = request_lock
 
     async def send(self, method, path, headers=None):
         """
@@ -100,4 +94,3 @@ class HTTPRequest:
         connection is kept open and released back to the pool for re-use.
         """
         self.connection.release()
-        self.request_lock.release()

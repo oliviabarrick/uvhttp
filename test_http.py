@@ -12,15 +12,13 @@ STATUS_301 = b'HTTP/1.1 301 Moved Permanently'
 @start_loop
 async def test_http_request(loop):
     pool_available = asyncio.Semaphore(1, loop=loop)
-    request_lock = asyncio.Semaphore(1, loop=loop)
-    await request_lock.acquire()
 
     conn = uvhttp.pool.Connection('127.0.0.1', 80, pool_available, loop)
     await conn.acquire()
 
     assert conn.locked()
 
-    request = uvhttp.http.HTTPRequest(conn, request_lock)
+    request = uvhttp.http.HTTPRequest(conn)
     await request.send('HEAD', b'/')
     response = await request.body()
     assert response[:len(STATUS_200)] == STATUS_200
@@ -30,8 +28,6 @@ async def test_http_request(loop):
 @start_loop
 async def test_http_connection_reuse(loop):
     pool_available = asyncio.Semaphore(1, loop=loop)
-    request_lock = asyncio.Semaphore(1, loop=loop)
-    await request_lock.acquire()
 
     conn = uvhttp.pool.Connection('127.0.0.1', 80, pool_available, loop)
 
@@ -39,7 +35,7 @@ async def test_http_connection_reuse(loop):
     await conn.acquire()
     assert conn.locked()
 
-    request = uvhttp.http.HTTPRequest(conn, request_lock)
+    request = uvhttp.http.HTTPRequest(conn)
     await request.send('HEAD', b'/')
     response = await request.body()
     assert response[:len(STATUS_200)] == STATUS_200
@@ -50,7 +46,7 @@ async def test_http_connection_reuse(loop):
     await conn.acquire()
     assert conn.locked()
 
-    request = uvhttp.http.HTTPRequest(conn, request_lock)
+    request = uvhttp.http.HTTPRequest(conn)
     await request.send('GET', b'/lol')
     response = await request.body()
     assert response[:len(STATUS_404)] == STATUS_404
@@ -61,7 +57,7 @@ async def test_http_connection_reuse(loop):
 
 @start_loop
 async def test_session(loop):
-    session = uvhttp.http.Session(2, 1, loop)
+    session = uvhttp.http.Session(1, loop)
 
     for _ in range(5):
         request = await session.request('HEAD', 'http://127.0.0.1/')
@@ -80,7 +76,7 @@ async def test_session(loop):
 
 @start_loop
 async def test_session_low_keepalives(loop):
-    session = uvhttp.http.Session(2, 1, loop)
+    session = uvhttp.http.Session(1, loop)
 
     for _ in range(6):
         request = await session.request('HEAD', 'http://127.0.0.1/low_keepalive')
@@ -101,7 +97,7 @@ async def test_session_benchmark(loop):
         response = await request.body()
         assert response[:len(STATUS_200)] == STATUS_200
 
-    session = uvhttp.http.Session(1000, 10, loop)
+    session = uvhttp.http.Session(10, loop)
     start_time = time.time()
 
     tasks = []
