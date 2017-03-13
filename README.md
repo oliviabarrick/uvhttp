@@ -10,7 +10,7 @@ uvhttp benchmark:
 
 ```
 ➜  uvhttp git:(master) ✗ ./uvhttp.py
-100000 HTTP requests in 3.26 seconds, 30680.65 rps
+100000 HTTP requests in 3.63 seconds, 27564.66 rps
 ➜  uvhttp git:(master) ✗
 ```
 
@@ -75,6 +75,8 @@ async def main(loop):
         })
 
         response = await response.body()
+
+        print(response.status)
 
 if __name__ == '__main__':
     main()
