@@ -54,6 +54,35 @@ class Session:
 
         return connections
 
+class Parser:
+    on_chunk_header = None
+
+    def __init__(self, connection):
+        self.headers_complete = False
+        self.done = False
+        self.headers = {}
+        self.body = b''
+        self.status = None
+
+    def on_header(self, name, value):
+        self.headers[name] = value
+
+    def on_body(self, body):
+        self.body += body
+
+    def on_headers_complete(self):
+        self.headers_complete = True
+        self.done = True
+
+    def on_chunk_complete(self):
+        self.done = True
+
+    def on_message_complete(self):
+        self.done = True
+
+    def on_message_begin(self):
+        self.done = False
+
 class HTTPRequest:
     """
     An HTTP request instantiated from a Session.
@@ -65,6 +94,9 @@ class HTTPRequest:
         """
         Send the request (usually called by the Session object).
         """
+        self.response = Parser(self.connection)
+        self.parser = httptools.HttpResponseParser(self.response)
+
         original_headers = {
             b"Host": b"127.0.0.1",
             b"User-Agent": b"uvloop http client"
@@ -80,13 +112,27 @@ class HTTPRequest:
 
         await self.connection.send(request)
 
+        await self.fetch_headers()
+
+    async def fetch_headers(self):
+        while not self.response.headers_complete and not self.response.done:
+            data = await self.connection.read(65535)
+            if not data:
+                self.response.done = True
+            self.parser.feed_data(data)
+
+        self.response.status = self.parser.get_status_code()
+
     async def body(self):
         """
         Wait for the response body.
         """
-        data = await self.connection.read(65535)
+        while not self.response.done:
+            data = await self.connection.read(65535)
+            self.parser.feed_data(data)
+
         self.close()
-        return data
+        return self.response
 
     def close(self):
         """

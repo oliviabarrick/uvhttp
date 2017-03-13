@@ -4,10 +4,10 @@ import uvhttp.pool
 import asyncio
 import functools
 import time
+import hashlib
 
-STATUS_404 = b'HTTP/1.1 404 Not Found'
-STATUS_200 = b'HTTP/1.1 200 OK'
-STATUS_301 = b'HTTP/1.1 301 Moved Permanently'
+MD5_404 = '9ba2182fb48f050de4fe3d1b36dd4075'
+MD5_GOOGLE = 'd4b691cd9d99117b2ea34586d3e7eeb8'
 
 @start_loop
 async def test_http_request(loop):
@@ -21,7 +21,7 @@ async def test_http_request(loop):
     request = uvhttp.http.HTTPRequest(conn)
     await request.send(b'HEAD', b'/')
     response = await request.body()
-    assert response[:len(STATUS_200)] == STATUS_200
+    assert response.status == 200
 
     assert not conn.lock.locked()
 
@@ -38,7 +38,7 @@ async def test_http_connection_reuse(loop):
     request = uvhttp.http.HTTPRequest(conn)
     await request.send(b'HEAD', b'/')
     response = await request.body()
-    assert response[:len(STATUS_200)] == STATUS_200
+    assert response.status == 200
 
     assert not conn.lock.locked()
 
@@ -49,7 +49,8 @@ async def test_http_connection_reuse(loop):
     request = uvhttp.http.HTTPRequest(conn)
     await request.send(b'GET', b'/lol')
     response = await request.body()
-    assert response[:len(STATUS_404)] == STATUS_404
+    assert response.status == 404
+    assert hashlib.md5(response.body).hexdigest() == MD5_404
 
     assert not conn.lock.locked()
 
@@ -62,15 +63,17 @@ async def test_session(loop):
     for _ in range(5):
         request = await session.request(b'HEAD', b'http://127.0.0.1/')
         response = await request.body()
-        assert response[:len(STATUS_200)] == STATUS_200
+        assert response.status == 200
 
         request = await session.request(b'GET', b'http://127.0.0.1/lol')
         response = await request.body()
-        assert response[:len(STATUS_404)] == STATUS_404
+        assert response.status == 404
+        assert hashlib.md5(response.body).hexdigest() == MD5_404
 
         request = await session.request(b'GET', b'http://www.google.com/')
         response = await request.body()
-        assert response[:len(STATUS_301)] == STATUS_301
+        assert response.status == 301
+        assert hashlib.md5(response.body).hexdigest() == MD5_GOOGLE
 
     assert await session.connections() == 2
 
@@ -81,10 +84,10 @@ async def test_session_low_keepalives(loop):
     for _ in range(6):
         request = await session.request(b'HEAD', b'http://127.0.0.1/low_keepalive')
         response = await request.body()
-        if not response:
+        if response.status == 0:
             continue
 
-        assert response[:len(STATUS_200)] == STATUS_200
+        assert response.status == 200
 
     assert await session.connections() == 2
 
@@ -95,7 +98,7 @@ async def test_session_benchmark(loop):
     async def do_request(session):
         request = await session.request(b'HEAD', b'http://127.0.0.1/')
         response = await request.body()
-        assert response[:len(STATUS_200)] == STATUS_200
+        assert response.status == 200
 
     session = uvhttp.http.Session(10, loop)
     start_time = time.time()
