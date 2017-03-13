@@ -5,9 +5,13 @@ import asyncio
 import functools
 import time
 import hashlib
+import zlib
 
 MD5_404 = '9ba2182fb48f050de4fe3d1b36dd4075'
 MD5_GOOGLE = 'd4b691cd9d99117b2ea34586d3e7eeb8'
+
+def md5(data):
+    return hashlib.md5(data).hexdigest()
 
 @start_loop
 async def test_http_request(loop):
@@ -23,7 +27,36 @@ async def test_http_request(loop):
     response = await request.body()
     assert response.status == 200
 
+    assert b"nginx" in response.headers[b"Server"]
+
     assert not conn.lock.locked()
+
+@start_loop
+async def test_gzipped_http_request(loop):
+    pool_available = asyncio.Semaphore(1, loop=loop)
+
+    conn = uvhttp.pool.Connection('127.0.0.1', 80, pool_available, loop)
+
+    for _ in range(6):
+        await conn.lock.acquire()
+
+        assert conn.lock.locked()
+
+        request = uvhttp.http.HTTPRequest(conn)
+        await request.send(b'GET', b'/index.html', headers={
+            b'Accept-Encoding': b'gzip'
+        })
+
+        response = await request.body()
+        assert response.status == 200
+
+        assert b'nginx' in response.headers[b'Server']
+        assert b'gzip' in response.headers[b'Content-Encoding']
+
+        body = zlib.decompress(response.body, 16 + zlib.MAX_WBITS)
+        assert md5(body) == 'e3eb0a1df437f3f97a64aca5952c8ea0'
+
+        assert not conn.lock.locked()
 
 @start_loop
 async def test_http_connection_reuse(loop):
@@ -50,7 +83,7 @@ async def test_http_connection_reuse(loop):
     await request.send(b'GET', b'/lol')
     response = await request.body()
     assert response.status == 404
-    assert hashlib.md5(response.body).hexdigest() == MD5_404
+    assert md5(response.body) == MD5_404
 
     assert not conn.lock.locked()
 
@@ -68,12 +101,12 @@ async def test_session(loop):
         request = await session.request(b'GET', b'http://127.0.0.1/lol')
         response = await request.body()
         assert response.status == 404
-        assert hashlib.md5(response.body).hexdigest() == MD5_404
+        assert md5(response.body) == MD5_404
 
         request = await session.request(b'GET', b'http://www.google.com/')
         response = await request.body()
         assert response.status == 301
-        assert hashlib.md5(response.body).hexdigest() == MD5_GOOGLE
+        assert md5(response.body) == MD5_GOOGLE
 
     assert await session.connections() == 2
 
