@@ -55,13 +55,7 @@ class Connection:
         if not self.writer:
             await self.connect()
 
-        self.writer.write(message.encode())
-
-    async def acquire(self):
-        """
-        Called by the pool when locking a connection for use.
-        """
-        await self.lock.acquire()
+        self.writer.write(message)
 
     def release(self):
         """
@@ -70,12 +64,6 @@ class Connection:
         """
         self.lock.release()
         self.pool_available.release()
-
-    def locked(self):
-        """
-        Check if the connection is in use.
-        """
-        return self.lock.locked()
 
     def close(self):
         """
@@ -116,12 +104,12 @@ class Pool:
         if len(self.pool) < self.conn_limit:
             async with self.pool_lock:
                 c = Connection(self.host, self.port, self.pool_available, self.loop)
-                await c.acquire()
+                await c.lock.acquire()
                 self.pool.append(c)
         else:
             for i, connection in enumerate(self.pool):
-                if not connection.locked():
-                    await connection.acquire()
+                if not connection.lock.locked():
+                    await connection.lock.acquire()
                     c = connection
                     break
 

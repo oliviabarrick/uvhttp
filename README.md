@@ -10,7 +10,7 @@ uvhttp benchmark:
 
 ```
 ➜  uvhttp git:(master) ✗ ./uvhttp.py
-100000 HTTP requests in 4.53 seconds, 22088.08 rps
+100000 HTTP requests in 3.26 seconds, 30680.65 rps
 ➜  uvhttp git:(master) ✗
 ```
 
@@ -18,7 +18,7 @@ asyncio with aiohttp:
 
 ```
 ➜  bencher git:(master) ✗ python3 http_test_asyncio_aiohttp.py
-10000 HTTP requests in 2.43 seconds, 4109.63 rps
+10000 HTTP requests in 1.67 seconds, 5991.36 rps
 ➜  bencher git:(master) ✗
 ```
 
@@ -26,7 +26,7 @@ uvloop with aiohttp is still not great:
 
 ```
 ➜  bencher git:(master) ✗ python3 http_test_uvloop_aiohttp.py
-10000 HTTP requests in 2.23 seconds, 4480.41 rps
+10000 HTTP requests in 1.97 seconds, 5065.03 rps
 ➜  bencher git:(master) ✗
 ```
 
@@ -34,14 +34,14 @@ gevent is even worse:
 
 ```
 ➜  bencher git:(master) ✗ python3 http_test_gevent.py 
-10000 HTTP requests in 7.81 seconds, 1281.19 rps
+10000 HTTP requests in 6.93 seconds, 1443.02 rps
 ➜  bencher git:(master) ✗ 
 ```
 
 We are striving for go performance:
 
 ```
-http_test.go:53: 100000 HTTP requests in 3.225065352 seconds, 31007.12360386302 rps
+http_test.go:53: 100000 HTTP requests in 2.274069869 seconds, 43974.02268206211 rps
 ```
 
 # Installation

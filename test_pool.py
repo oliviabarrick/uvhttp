@@ -3,9 +3,9 @@ import asyncio
 import functools
 import time
 
-HEAD = 'HEAD / HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n'
-HEAD_LOW = 'HEAD /low_keepalive HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n'
-GET_404 = 'GET /lol HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n'
+HEAD = b'HEAD / HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n'
+HEAD_LOW = b'HEAD /low_keepalive HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n'
+GET_404 = b'GET /lol HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n'
 STATUS_404 = b'HTTP/1.1 404 Not Found'
 STATUS_200 = b'HTTP/1.1 200 OK'
 
@@ -23,7 +23,7 @@ async def test_connection(loop):
 
     conn = uvhttp.pool.Connection('127.0.0.1', 80, pool_available, loop)
 
-    await conn.acquire()
+    await conn.lock.acquire()
 
     await conn.send(HEAD)
     response = await conn.read(65535)
@@ -38,7 +38,7 @@ async def test_connection_failed(loop):
 
     conn = uvhttp.pool.Connection('127.0.0.1', 31337, pool_available, loop)
 
-    await conn.acquire()
+    await conn.lock.acquire()
 
     try:
         await conn.send(HEAD)
@@ -55,17 +55,17 @@ async def test_connection_reuse(loop):
 
     conn = uvhttp.pool.Connection('127.0.0.1', 80, pool_available, loop)
     
-    assert not conn.locked()
-    await conn.acquire()
-    assert conn.locked()
+    assert not conn.lock.locked()
+    await conn.lock.acquire()
+    assert conn.lock.locked()
 
     await conn.send(HEAD)
     response = await conn.read(65535)
     assert response[:len(STATUS_200)] == STATUS_200
 
     conn.release()
-    assert not conn.locked()
-    await conn.acquire()
+    assert not conn.lock.locked()
+    await conn.lock.acquire()
 
     await conn.send(GET_404)
     response = await conn.read(65535)
@@ -73,8 +73,8 @@ async def test_connection_reuse(loop):
     assert b'</html>' in response
 
     conn.release()
-    assert not conn.locked()
-    await conn.acquire()
+    assert not conn.lock.locked()
+    await conn.lock.acquire()
 
     await conn.send(HEAD)
     response = await conn.read(65535)
@@ -92,7 +92,7 @@ async def test_connection_eof(loop):
     conn = uvhttp.pool.Connection('127.0.0.1', 80, pool_available, loop)
 
     for _ in range(6):
-        await conn.acquire()
+        await conn.lock.acquire()
 
         await conn.send(HEAD_LOW)
         response = await conn.read(65535)

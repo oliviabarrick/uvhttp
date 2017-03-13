@@ -21,7 +21,7 @@ class Session:
         """
 
         # Parse the URL for the hostname, port, and query string.
-        parsed_url = httptools.parse_url(url.encode())
+        parsed_url = httptools.parse_url(url)
 
         port = parsed_url.port
         if not port:
@@ -66,17 +66,17 @@ class HTTPRequest:
         Send the request (usually called by the Session object).
         """
         original_headers = {
-            "Host": "127.0.0.1",
-            "User-Agent": "uvloop http client"
+            b"Host": b"127.0.0.1",
+            b"User-Agent": b"uvloop http client"
         }
 
         headers = headers or {}
         headers.update(original_headers)
 
-        request = "{} {} HTTP/1.1\r\n".format(method.upper(), path.decode())
+        request = method + b" " + path + b" HTTP/1.1\r\n"
         for header, value in headers.items():
-            request += "{}: {}\r\n".format(header, value)
-        request += "\r\n"
+            request += header + b": " + value + b"\r\n"
+        request += b"\r\n"
 
         await self.connection.send(request)
 
