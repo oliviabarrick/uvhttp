@@ -10,7 +10,7 @@ NUM_REQUESTS = 100000
 @start_loop
 async def main(loop):
     async def request(session):
-        response = await session.request(b'HEAD', b'http://127.0.0.1/index.html', headers={
+        response = await session.request(b'HEAD', b'http://127.0.0.1/', headers={
             b'User-Agent': b'fast-af'
         })
 
