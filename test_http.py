@@ -8,7 +8,6 @@ import hashlib
 import zlib
 
 MD5_404 = '9ba2182fb48f050de4fe3d1b36dd4075'
-MD5_GOOGLE = 'd4b691cd9d99117b2ea34586d3e7eeb8'
 
 def md5(data):
     return hashlib.md5(data).hexdigest()
@@ -23,7 +22,7 @@ async def test_http_request(loop):
     assert conn.locked
 
     request = uvhttp.http.HTTPRequest(conn)
-    await request.send(b'HEAD', b'/')
+    await request.send(b'HEAD', b'127.0.0.1', b'/')
     response = await request.body()
     assert response.status == 200
 
@@ -43,7 +42,7 @@ async def test_gzipped_http_request(loop):
         assert conn.locked
 
         request = uvhttp.http.HTTPRequest(conn)
-        await request.send(b'GET', b'/index.html', headers={
+        await request.send(b'GET', b'127.0.0.1', b'/index.html', headers={
             b'Accept-Encoding': b'gzip'
         })
 
@@ -69,7 +68,7 @@ async def test_http_connection_reuse(loop):
     assert conn.locked
 
     request = uvhttp.http.HTTPRequest(conn)
-    await request.send(b'HEAD', b'/')
+    await request.send(b'HEAD', b'127.0.0.1', b'/')
     response = await request.body()
     assert response.status == 200
 
@@ -80,7 +79,7 @@ async def test_http_connection_reuse(loop):
     assert conn.locked
 
     request = uvhttp.http.HTTPRequest(conn)
-    await request.send(b'GET', b'/lol')
+    await request.send(b'GET', b'127.0.0.1', b'/lol')
     response = await request.body()
     assert response.status == 404
     assert md5(response.content) == MD5_404
@@ -94,30 +93,58 @@ async def test_session(loop):
     session = uvhttp.http.Session(1, loop)
 
     for _ in range(5):
-        request = await session.request(b'HEAD', b'http://127.0.0.1/')
-        response = await request.body()
-        assert response.status == 200
+        try:
+            request = await session.request(b'HEAD', b'http://127.0.0.1/')
+            response = await request.body()
+            assert response.status == 200
+        except uvhttp.http.EOFError:
+            pass
 
-        request = await session.request(b'GET', b'http://127.0.0.1/lol')
-        response = await request.body()
-        assert response.status == 404
-        assert md5(response.content) == MD5_404
+        try:
+            request = await session.request(b'GET', b'http://127.0.0.1/lol')
+            response = await request.body()
+            assert response.status == 404
+            assert md5(response.content) == MD5_404
+        except uvhttp.http.EOFError:
+            pass
 
-        request = await session.request(b'GET', b'http://www.google.com/')
-        response = await request.body()
-        assert response.status == 301
-        assert md5(response.content) == MD5_GOOGLE
+        try:
+            request = await session.request(b'GET', b'http://www.google.com/')
+            response = await request.body()
+            assert response.status == 302
+            assert b"The document has moved" in response.content
+        except uvhttp.http.EOFError:
+            pass
 
-    assert await session.connections() == 2
+        try:
+            request = await session.request(b'GET', b'http://imgur.com/')
+            response = await request.body()
+            assert response.status == 200
+            assert len(response.content) > 100000
+        except uvhttp.http.EOFError:
+            pass
+
+        try:
+            request = await session.request(b'GET', b'http://imgur.com/', headers={
+                b"Accept-Encoding": b"gzip"
+            })
+            response = await request.body()
+            assert response.status == 200
+            assert len(response.content) > 10000
+        except uvhttp.http.EOFError:
+            pass
+
+    assert await session.connections() == 3
 
 @start_loop
 async def test_session_low_keepalives(loop):
     session = uvhttp.http.Session(1, loop)
 
     for _ in range(6):
-        request = await session.request(b'HEAD', b'http://127.0.0.1/low_keepalive')
-        response = await request.body()
-        if response.status == 0:
+        try:
+            request = await session.request(b'HEAD', b'http://127.0.0.1/low_keepalive')
+            response = await request.body()
+        except uvhttp.http.EOFError:
             continue
 
         assert response.status == 200

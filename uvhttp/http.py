@@ -4,6 +4,9 @@ import urllib.parse
 from httptools import HttpResponseParser, parse_url
 from uvhttp import pool
 
+class EOFError(Exception):
+    pass
+
 class Session:
     """
     A Session is an HTTP request pool that allows up to request_limit requests
@@ -43,7 +46,7 @@ class Session:
 
         # Create and send the new HTTP request.
         request = HTTPRequest(await session.connect())
-        await request.send(method, path, headers)
+        await request.send(method, host, path, headers)
         return request
 
     async def connections(self):
@@ -61,28 +64,31 @@ class HTTPRequest:
     def __init__(self, connection):
         self.connection = connection
 
-    async def send(self, method, path, headers=None):
+    async def send(self, method, host, path, headers=None):
         """
         Send the request (usually called by the Session object).
         """
         self.headers_complete = False
-        self.done = False
+        self.contains_body = False
+        self.body_done = True
+
         self.headers = {}
         self.content = b''
-        self.status = None
         self.parser = HttpResponseParser(self)
 
-        original_headers = {
-            b"Host": b"127.0.0.1",
+        self.method = method
+
+        request_headers = {
+            b"Host": host,
             b"User-Agent": b"uvloop http client"
         }
 
-        headers = headers or {}
-        headers.update(original_headers)
+        if headers:
+            request_headers.update(headers)
 
         request = b"\r\n".join(
             [ b" ".join([method, path, b"HTTP/1.1"]) ] +
-            [ b": ".join(header) for header in headers.items() ] +
+            [ b": ".join(header) for header in request_headers.items() ] +
             [ b"\r\n" ]
         )
 
@@ -91,10 +97,12 @@ class HTTPRequest:
         await self.fetch_headers()
 
     async def fetch_headers(self):
-        while not self.headers_complete and not self.done:
+        while not self.headers_complete:
             data = await self.connection.read(65535)
             if not data:
-                self.done = True
+                self.close()
+                raise EOFError()
+
             self.parser.feed_data(data)
 
         self.status = self.parser.get_status_code()
@@ -103,7 +111,7 @@ class HTTPRequest:
         """
         Wait for the response body.
         """
-        while not self.done:
+        while not self.body_done:
             data = await self.connection.read(65535)
             self.parser.feed_data(data)
 
@@ -125,13 +133,13 @@ class HTTPRequest:
 
     def on_headers_complete(self):
         self.headers_complete = True
-        self.done = True
 
     def on_chunk_complete(self):
-        self.done = True
+        self.body_done = True
 
     def on_message_complete(self):
-        self.done = True
+        self.body_done = True
 
     def on_message_begin(self):
-        self.done = False
+        if self.method != b"HEAD":
+            self.body_done = False
