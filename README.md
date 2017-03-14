@@ -69,11 +69,11 @@ async def main(loop):
     session = uvhttp.http.Session(NUM_CONNS_PER_HOST, loop)
 
     for _ in range(6):
-        response = await session.head(b'http://127.0.0.1/', headers={
+        response = await session.get(b'http://www.google.com/', headers={
             b'User-Agent': b'fast-af'
         })
 
-        print(response.json())
+        print(response.content)
 
 if __name__ == '__main__':
     main()
