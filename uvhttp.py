@@ -10,11 +10,9 @@ NUM_REQUESTS = 100000
 @start_loop
 async def main(loop):
     async def request(session):
-        response = await session.request(b'HEAD', b'http://127.0.0.1/', headers={
+        response = await session.request(b'HEAD', b'http://127.0.0.1/index.html', headers={
             b'User-Agent': b'fast-af'
         })
-
-        response = await response.body()
 
     num_requests = int(NUM_REQUESTS / NUM_WORKERS)
     session = uvhttp.http.Session(10, loop)

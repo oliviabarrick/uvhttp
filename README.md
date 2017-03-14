@@ -10,7 +10,7 @@ uvhttp benchmark:
 
 ```
 ➜  uvhttp git:(master) ✗ ./uvhttp.py
-100000 HTTP requests in 3.59 seconds, 27843.15 rps
+100000 HTTP requests in 3.62 seconds, 27645.04 rps
 ➜  uvhttp git:(master) ✗
 ```
 
@@ -62,21 +62,18 @@ Usage will eventually be requests-like:
 from uvhttp.utils import start_loop
 import uvhttp.http
 
-NUM_REQUESTS = 1000
 NUM_CONNS_PER_HOST = 10
 
 @start_loop
 async def main(loop):
-    session = uvhttp.http.Session(NUM_REQUESTS, NUM_CONNS_PER_HOST, loop)
+    session = uvhttp.http.Session(NUM_CONNS_PER_HOST, loop)
 
     for _ in range(6):
-        response = await session.request('HEAD', 'http://127.0.0.1/', headers={
-            'User-Agent': 'fast-af'
+        response = await session.head(b'http://127.0.0.1/', headers={
+            b'User-Agent': b'fast-af'
         })
 
-        response = await response.body()
-
-        print(response.status)
+        print(response.json())
 
 if __name__ == '__main__':
     main()

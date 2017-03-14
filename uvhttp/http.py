@@ -1,8 +1,11 @@
 import asyncio
+import json
 import urllib
 import urllib.parse
+import zlib
 from httptools import HttpResponseParser, parse_url
 from uvhttp import pool
+from uvhttp.utils import HeaderDict
 
 class EOFError(Exception):
     pass
@@ -17,6 +20,21 @@ class Session:
         self.loop = loop
 
         self.hosts = {}
+
+    async def head(self, url, headers=None):
+        return await self.request(b'HEAD', url, headers)
+
+    async def get(self, url, headers=None):
+        return await self.request(b'GET', url, headers)
+
+    async def post(self, url, headers=None):
+        return await self.request(b'POST', url, headers)
+
+    async def put(self, url, headers=None):
+        return await self.request(b'PUT', url, headers)
+
+    async def delete(self, url, headers=None):
+        return await self.request(b'DELETE', url, headers)
 
     async def request(self, method, url, headers=None):
         """
@@ -72,51 +90,46 @@ class HTTPRequest:
         self.contains_body = False
         self.body_done = True
 
-        self.headers = {}
+        self.__text = b''
         self.content = b''
+        self.__headers = {}
+        self.__header_dict = None
         self.parser = HttpResponseParser(self)
 
         self.method = method
 
-        request_headers = {
+        self.request_headers = {
             b"Host": host,
             b"User-Agent": b"uvloop http client"
         }
 
         if headers:
-            request_headers.update(headers)
+            self.request_headers.update(headers)
 
         request = b"\r\n".join(
             [ b" ".join([method, path, b"HTTP/1.1"]) ] +
-            [ b": ".join(header) for header in request_headers.items() ] +
+            [ b": ".join(header) for header in self.request_headers.items() ] +
             [ b"\r\n" ]
         )
 
         await self.connection.send(request)
 
-        await self.fetch_headers()
+        await self.fetch()
 
-    async def fetch_headers(self):
-        while not self.headers_complete:
+    async def fetch(self):
+        # TODO: support streaming
+        while not self.headers_complete or not self.body_done:
             data = await self.connection.read(65535)
+
             if not data:
                 self.close()
                 raise EOFError()
 
             self.parser.feed_data(data)
 
-        self.status = self.parser.get_status_code()
-
-    async def body(self):
-        """
-        Wait for the response body.
-        """
-        while not self.body_done:
-            data = await self.connection.read(65535)
-            self.parser.feed_data(data)
-
         self.close()
-        return self
+
+        self.status_code = self.parser.get_status_code()
 
     def close(self):
         """
@@ -125,8 +138,36 @@ class HTTPRequest:
         """
         self.connection.release()
 
+    def gzipped(self):
+        encoding = self.headers[b'content-encoding'] + self.headers[b'transfer-encoding']
+        return b'gzip' in encoding or b'deflate' in encoding
+
+    def json(self):
+        # TODO: Possibly should use a better library.
+        return json.loads(self.text)
+
+    @property
+    def text(self):
+        if self.__text:
+            return self.__text
+
+        if self.gzipped():
+            self.__text = zlib.decompress(self.content, 16 + zlib.MAX_WBITS)
+        else:
+            self.__text = self.content
+
+        return self.__text.decode('utf-8')
+
+    @property
+    def headers(self):
+        if self.headers_complete and self.__header_dict:
+            return self.__header_dict
+
+        self.__header_dict = HeaderDict(self.__headers)
+        return self.__header_dict
+
     def on_header(self, name, value):
-        self.headers[name] = value
+        self.__headers[name] = value
 
     def on_body(self, body):
         self.content += body
