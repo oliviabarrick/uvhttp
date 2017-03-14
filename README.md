@@ -51,7 +51,7 @@ To install:
 ```
 git clone https://codesink.net/justin/uvhttp.git
 cd uvhttp/
-pip3 install --user -r requirements.txt
+python3 setup.py install --user
 ```
 
 # Usage
