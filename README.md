@@ -73,7 +73,7 @@ async def main(loop):
             b'User-Agent': b'fast-af'
         })
 
-        print(response.content)
+        print(response.text)
 
 if __name__ == '__main__':
     main()
