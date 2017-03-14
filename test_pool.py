@@ -23,7 +23,7 @@ async def test_connection(loop):
 
     conn = uvhttp.pool.Connection('127.0.0.1', 80, pool_available, loop)
 
-    await conn.lock.acquire()
+    conn.locked = True
 
     await conn.send(HEAD)
     response = await conn.read(65535)
@@ -38,7 +38,7 @@ async def test_connection_failed(loop):
 
     conn = uvhttp.pool.Connection('127.0.0.1', 31337, pool_available, loop)
 
-    await conn.lock.acquire()
+    conn.locked = True
 
     try:
         await conn.send(HEAD)
@@ -55,17 +55,17 @@ async def test_connection_reuse(loop):
 
     conn = uvhttp.pool.Connection('127.0.0.1', 80, pool_available, loop)
     
-    assert not conn.lock.locked()
-    await conn.lock.acquire()
-    assert conn.lock.locked()
+    assert not conn.locked
+    conn.locked = True
+    assert conn.locked
 
     await conn.send(HEAD)
     response = await conn.read(65535)
     assert response[:len(STATUS_200)] == STATUS_200
 
     conn.release()
-    assert not conn.lock.locked()
-    await conn.lock.acquire()
+    assert not conn.locked
+    conn.locked = True
 
     await conn.send(GET_404)
     response = await conn.read(65535)
@@ -73,8 +73,8 @@ async def test_connection_reuse(loop):
     assert b'</html>' in response
 
     conn.release()
-    assert not conn.lock.locked()
-    await conn.lock.acquire()
+    assert not conn.locked
+    conn.locked = True
 
     await conn.send(HEAD)
     response = await conn.read(65535)
@@ -92,7 +92,7 @@ async def test_connection_eof(loop):
     conn = uvhttp.pool.Connection('127.0.0.1', 80, pool_available, loop)
 
     for _ in range(6):
-        await conn.lock.acquire()
+        conn.locked = True
 
         await conn.send(HEAD_LOW)
         response = await conn.read(65535)

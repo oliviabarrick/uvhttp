@@ -14,9 +14,11 @@ class Connection:
         # Semaphore used by the Pool to determine if any connections are
         # available.
         self.pool_available = pool_available
+
         # Lock used to lock the connection, is released by release() to release
-        # the connection back into the pool.
-        self.lock = asyncio.Lock(loop=loop)
+        # the connection back into the pool. Note that this is just a boolean
+        # since a lock is not needed due to the way this variable is accessed.
+        self.locked = False
 
         self.reader = None
         self.writer = None
@@ -62,7 +64,7 @@ class Connection:
         Called once the connection is no longer needed to release back into
         the pool.
         """
-        self.lock.release()
+        self.locked = False
         self.pool_available.release()
 
     def close(self):
@@ -102,14 +104,13 @@ class Pool:
         c = None
 
         if len(self.pool) < self.conn_limit:
-            async with self.pool_lock:
-                c = Connection(self.host, self.port, self.pool_available, self.loop)
-                await c.lock.acquire()
-                self.pool.append(c)
+            c = Connection(self.host, self.port, self.pool_available, self.loop)
+            c.locked = True
+            self.pool.append(c)
         else:
             for i, connection in enumerate(self.pool):
-                if not connection.lock.locked():
-                    await connection.lock.acquire()
+                if not connection.locked:
+                    connection.locked = True
                     c = connection
                     break
 

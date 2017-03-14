@@ -18,9 +18,9 @@ async def test_http_request(loop):
     pool_available = asyncio.Semaphore(1, loop=loop)
 
     conn = uvhttp.pool.Connection('127.0.0.1', 80, pool_available, loop)
-    await conn.lock.acquire()
+    conn.locked = True
 
-    assert conn.lock.locked()
+    assert conn.locked
 
     request = uvhttp.http.HTTPRequest(conn)
     await request.send(b'HEAD', b'/')
@@ -29,7 +29,7 @@ async def test_http_request(loop):
 
     assert b"nginx" in response.headers[b"Server"]
 
-    assert not conn.lock.locked()
+    assert not conn.locked
 
 @start_loop
 async def test_gzipped_http_request(loop):
@@ -38,9 +38,9 @@ async def test_gzipped_http_request(loop):
     conn = uvhttp.pool.Connection('127.0.0.1', 80, pool_available, loop)
 
     for _ in range(6):
-        await conn.lock.acquire()
+        conn.locked = True
 
-        assert conn.lock.locked()
+        assert conn.locked
 
         request = uvhttp.http.HTTPRequest(conn)
         await request.send(b'GET', b'/index.html', headers={
@@ -56,7 +56,7 @@ async def test_gzipped_http_request(loop):
         body = zlib.decompress(response.content, 16 + zlib.MAX_WBITS)
         assert md5(body) == 'e3eb0a1df437f3f97a64aca5952c8ea0'
 
-        assert not conn.lock.locked()
+        assert not conn.locked
 
 @start_loop
 async def test_http_connection_reuse(loop):
@@ -65,19 +65,19 @@ async def test_http_connection_reuse(loop):
     conn = uvhttp.pool.Connection('127.0.0.1', 80, pool_available, loop)
 
     # Send an HTTP request
-    await conn.lock.acquire()
-    assert conn.lock.locked()
+    conn.locked = True
+    assert conn.locked
 
     request = uvhttp.http.HTTPRequest(conn)
     await request.send(b'HEAD', b'/')
     response = await request.body()
     assert response.status == 200
 
-    assert not conn.lock.locked()
+    assert not conn.locked
 
     # Send another HTTP request
-    await conn.lock.acquire()
-    assert conn.lock.locked()
+    conn.locked = True
+    assert conn.locked
 
     request = uvhttp.http.HTTPRequest(conn)
     await request.send(b'GET', b'/lol')
@@ -85,7 +85,7 @@ async def test_http_connection_reuse(loop):
     assert response.status == 404
     assert md5(response.content) == MD5_404
 
-    assert not conn.lock.locked()
+    assert not conn.locked
 
     assert conn.connect_count == 1
 
