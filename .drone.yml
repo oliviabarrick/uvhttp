@@ -1,4 +1,9 @@
-image: python:3.5-onbuild
-script:
-- python3 setup.py install
-- nosetests -v
+build:
+  image: python:3.5-onbuild
+  commands:
+    - apt-get update && apt-get install -y nginx
+    - sed -i "s#ROOT#$(pwd)#g" ./nginx.conf && nginx -c $(pwd)/nginx.conf
+    - python3 setup.py install
+    - nosetests -v -s
+    - ./uvhttp.py
+
