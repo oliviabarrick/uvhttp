@@ -7,8 +7,6 @@ import time
 import hashlib
 import zlib
 
-MD5_404 = '9ba2182fb48f050de4fe3d1b36dd4075'
-
 def md5(data):
     return hashlib.md5(data).hexdigest()
 
@@ -50,7 +48,7 @@ async def test_gzipped_http_request(loop):
         assert b'nginx' in request.headers[b'Server']
         assert b'gzip' in request.headers[b'Content-Encoding']
 
-        assert md5(request.text.encode()) == 'e3eb0a1df437f3f97a64aca5952c8ea0'
+        assert b'Welcome to nginx' in request.text.encode()
 
         assert not conn.locked
 
@@ -77,7 +75,7 @@ async def test_http_connection_reuse(loop):
     request = uvhttp.http.HTTPRequest(conn)
     await request.send(b'GET', b'127.0.0.1', b'/lol')
     assert request.status_code == 404
-    assert md5(request.content) == MD5_404
+    assert b'<head><title>404 Not Found</title></head>' in request.content
 
     assert not conn.locked
 
@@ -97,26 +95,32 @@ async def test_session(loop):
         try:
             response = await session.request(b'GET', b'http://127.0.0.1/lol')
             assert response.status_code == 404
-            assert md5(response.content) == MD5_404
+            assert b'<head><title>404 Not Found</title></head>' in response.content
         except uvhttp.http.EOFError:
             pass
 
         try:
-            response = await session.request(b'GET', b'http://www.google.com/')
+            response = await session.request(b'GET', b'http://127.0.0.3/', headers={
+                b'Host': b'www.google.com'
+            })
             assert response.status_code == 302
-            assert b"The document has moved" in response.content
+            assert b"<center><h1>302 Found</h1></center>" in response.content
+            assert response.headers[b"Location"] == b"http://www.google.com/test"
         except uvhttp.http.EOFError:
             pass
 
         try:
-            response = await session.request(b'GET', b'http://imgur.com/')
+            response = await session.request(b'GET', b'http://127.0.0.2/', headers={
+                b'Host': b'imgur.com'
+            })
             assert response.status_code == 200
             assert len(response.content) > 100000
         except uvhttp.http.EOFError:
             pass
 
         try:
-            response = await session.request(b'GET', b'http://imgur.com/', headers={
+            response = await session.request(b'GET', b'http://127.0.0.2/', headers={
+                b'Host': b'imgur.com',
                 b"Accept-Encoding": b"gzip"
             })
             assert response.status_code == 200
