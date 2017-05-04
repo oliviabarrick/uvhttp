@@ -46,6 +46,14 @@ We are striving for go performance:
 http_test.go:53: 100000 HTTP requests in 2.274069869 seconds, 43974.02268206211 rps
 ```
 
+# Running the tests:
+
+To run the tests:
+
+```
+docker-compose up
+```
+
 # Installation
 
 To install:
