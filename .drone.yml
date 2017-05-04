@@ -1,9 +1,10 @@
 build:
-  image: python:3.5-onbuild
+  image: python:3.5
   commands:
     - apt-get update && apt-get install -y nginx
     - sed -i "s#ROOT#$(pwd)#g" ./nginx.conf && nginx -c $(pwd)/nginx.conf
     - python3 setup.py install
+    - python3 http_test_server.py
     - nosetests -v -s
     - ./uvhttp.py
 
