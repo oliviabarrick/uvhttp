@@ -21,22 +21,22 @@ class Session:
 
         self.hosts = {}
 
-    async def head(self, url, headers=None):
-        return await self.request(b'HEAD', url, headers)
+    async def head(self, url, headers=None, data=None):
+        return await self.request(b'HEAD', url, headers, data)
 
-    async def get(self, url, headers=None):
-        return await self.request(b'GET', url, headers)
+    async def get(self, url, headers=None, data=None):
+        return await self.request(b'GET', url, headers, data)
 
-    async def post(self, url, headers=None):
-        return await self.request(b'POST', url, headers)
+    async def post(self, url, headers=None, data=None):
+        return await self.request(b'POST', url, headers, data)
 
-    async def put(self, url, headers=None):
-        return await self.request(b'PUT', url, headers)
+    async def put(self, url, headers=None, data=None):
+        return await self.request(b'PUT', url, headers, data)
 
-    async def delete(self, url, headers=None):
-        return await self.request(b'DELETE', url, headers)
+    async def delete(self, url, headers=None, data=None):
+        return await self.request(b'DELETE', url, headers, data)
 
-    async def request(self, method, url, headers=None):
+    async def request(self, method, url, headers=None, data=None):
         """
         Make a new HTTP request in the pool.
         """
@@ -64,7 +64,7 @@ class Session:
 
         # Create and send the new HTTP request.
         request = HTTPRequest(await session.connect())
-        await request.send(method, host, path, headers)
+        await request.send(method, host, path, headers, data)
         return request
 
     async def connections(self):
@@ -82,7 +82,7 @@ class HTTPRequest:
     def __init__(self, connection):
         self.connection = connection
 
-    async def send(self, method, host, path, headers=None):
+    async def send(self, method, host, path, headers=None, data=None):
         """
         Send the request (usually called by the Session object).
         """
@@ -103,6 +103,9 @@ class HTTPRequest:
             b"User-Agent": b"uvloop http client"
         }
 
+        if data:
+            self.request_headers[b"Content-Length"] = str(len(data)).encode()
+
         if headers:
             self.request_headers.update(headers)
 
@@ -111,6 +114,9 @@ class HTTPRequest:
             [ b": ".join(header) for header in self.request_headers.items() ] +
             [ b"\r\n" ]
         )
+
+        if data:
+            request += data
 
         await self.connection.send(request)
 
