@@ -9,5 +9,5 @@ ADD . /uvhttp
 
 CMD python setup.py install && \
     sed -i 's#ROOT#/uvhttp#g' ./nginx.conf && \
-    nginx -c /uvhttp/nginx.conf && \
+    nginx -c /uvhttp/nginx.conf && python3 http_test_server.py && \
     nosetests -v -s && ./uvhttp.py

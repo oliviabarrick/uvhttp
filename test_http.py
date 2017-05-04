@@ -175,3 +175,11 @@ async def test_json_body(loop):
     response = await session.request(b'GET', b'http://127.0.0.1/test.json')
 
     assert response.json() == [{"this is a json": "Body!"}]
+
+@start_loop
+async def test_text_request_body(loop):
+    session = uvhttp.http.Session(10, loop)
+
+    response = await session.post(b'http://127.0.0.1/proxy/echo', data=b'hello')
+
+    assert response.json()["body"] == 'hello'
