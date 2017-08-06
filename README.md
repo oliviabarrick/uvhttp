@@ -4,6 +4,39 @@
 
 See their [blog](https://magic.io/blog/uvloop-blazing-fast-python-networking/) for details.
 
+# Installation
+
+To install:
+
+```
+pip3 install uvhttp
+```
+
+# Usage
+
+Usage will eventually be requests-like:
+
+```
+from uvhttp.utils import start_loop
+import uvhttp.http
+
+NUM_CONNS_PER_HOST = 10
+
+@start_loop
+async def main(loop):
+    session = uvhttp.http.Session(NUM_CONNS_PER_HOST, loop)
+
+    for _ in range(6):
+        response = await session.get(b'http://www.google.com/', headers={
+            b'User-Agent': b'fast-af'
+        })
+
+        print(response.text)
+
+if __name__ == '__main__':
+    main()
+```
+
 # Benchmarks
 
 All benchmarks running with 8 cores, see [bencher](https://codesink.net/justin/bencher).
@@ -52,39 +85,4 @@ To run the tests:
 
 ```
 docker-compose up
-```
-
-# Installation
-
-To install:
-
-```
-git clone https://codesink.net/justin/uvhttp.git
-cd uvhttp/
-python3 setup.py install --user
-```
-
-# Usage
-
-Usage will eventually be requests-like:
-
-```
-from uvhttp.utils import start_loop
-import uvhttp.http
-
-NUM_CONNS_PER_HOST = 10
-
-@start_loop
-async def main(loop):
-    session = uvhttp.http.Session(NUM_CONNS_PER_HOST, loop)
-
-    for _ in range(6):
-        response = await session.get(b'http://www.google.com/', headers={
-            b'User-Agent': b'fast-af'
-        })
-
-        print(response.text)
-
-if __name__ == '__main__':
-    main()
 ```
