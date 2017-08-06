@@ -1,6 +1,6 @@
 [uvloop-based](https://github.com/magicstack/uvloop) high performance HTTP client.
 
-[![Build Status](https://ci.codesink.net/api/badges/justin/uvhttp/status.svg)](https://ci.codesink.net/justin/uvhttp)
+[![Build Status](https://travis-ci.org/justinbarrick/uvhttp.svg?branch=master)](https://github.com/justinbarrick/uvhttp)
 
 See their [blog](https://magic.io/blog/uvloop-blazing-fast-python-networking/) for details.
 
