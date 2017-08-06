@@ -48,6 +48,8 @@ async def test_gzipped_http_request(loop):
         assert b'nginx' in request.headers[b'Server']
         assert b'gzip' in request.headers[b'Content-Encoding']
 
+        assert 'Welcome to nginx' in request.text
+        assert 'Welcome to nginx' in request.text
         assert b'Welcome to nginx' in request.text.encode()
 
         assert not conn.locked
@@ -181,5 +183,4 @@ async def test_text_request_body(loop):
     session = uvhttp.http.Session(10, loop)
 
     response = await session.post(b'http://127.0.0.1/proxy/echo', data=b'hello')
-
     assert response.json()["body"] == 'hello'

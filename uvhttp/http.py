@@ -162,7 +162,8 @@ class HTTPRequest:
         else:
             self.__text = self.content
 
-        return self.__text.decode('utf-8')
+        self.__text = self.__text.decode('utf-8')
+        return self.__text
 
     @property
     def headers(self):
