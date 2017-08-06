@@ -3,5 +3,5 @@ build:
 	docker-compose -f docker/docker-compose.yml build
 
 .PHONY: test
-test:
+test: build
 	docker-compose -f docker/docker-compose.yml up

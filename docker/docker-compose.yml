@@ -4,5 +4,3 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile
-    volumes:
-      - ..:/uvhttp

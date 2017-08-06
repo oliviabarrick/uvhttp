@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='uvhttp',
-    version='1.2',
+    version='1.3',
     description='High performance Python HTTP client',
     url='https://github.com/justinbarrick/uvhttp',
     packages=['uvhttp'],

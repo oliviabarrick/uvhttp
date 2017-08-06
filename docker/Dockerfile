@@ -7,7 +7,4 @@ RUN pip install -r requirements.txt
 WORKDIR /uvhttp
 ADD . /uvhttp
 
-CMD python setup.py install && \
-    sed -i 's#ROOT#/uvhttp#g' ./docker/nginx.conf && \
-    nginx -c /uvhttp/docker/nginx.conf && python3 docker/http_test_server.py && \
-    nosetests -v -s && ./uvhttp.py
+CMD /uvhttp/docker/run.sh
