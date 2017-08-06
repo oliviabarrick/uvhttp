@@ -3,9 +3,9 @@ sudo: required
 services:
 - docker
 install:
-- docker-compose build
+- make build
 script:
-- docker-compose up
+- make test
 deploy:
   provider: pypi
   user: justinbarrick
