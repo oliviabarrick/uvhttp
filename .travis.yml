@@ -1,8 +1,16 @@
 language: python
 sudo: required
 services:
-  - docker
+- docker
 install:
-  - docker-compose build
+- docker-compose build
 script:
-  - docker-compose up
+- docker-compose up
+deploy:
+  provider: pypi
+  user: justinbarrick
+  password:
+    secure: MlKtZu0k7G7QcmWqrskLrpyC9SpuiZP73SuvbT9NDR/kQDK2Y+eRZoFVm3P9NYeB5PYGWMrwkRvzlHOvT5skIg9gNCO7PnQv31VNRLxHNmri/Gz+WLBFC2+xYIwc4xRIIyatPFf4t/BpX1GdL4zUV+dNGG1TNrMk3gw7WSrWPF42odw6ziecRYR88GUsigoCB89UtacMIRxSN+vHy7aaaNrLbhhLrZDQM8opG9ZORLfrszSD2YXi8z5zuCmXh2ltAl6gBPCMWaNUriXvC7vE33PpOlFp4m5wsy31MV1vuiNCXO7hOIYz32AOlIdTKMUX0MfechNTZUU40GLJUWA1xzgY3kBzWn0SCTgCXbMO8ye042An/t1wiN1A+IMZmBeVb0Ta+RWKEkCsNYT7g6TxNu/7uV6l5AMkcEjFtVuITIyazIxHbp/DSUMyjSYie6upJUZxfdz0DNAUIFrIRUohhAZRAmzNzCvhjsADEKWn1J4FK1j1xSafeYnlWVKhaYz09KU+6GyXhIzSI118IHFpNS7GwB3xD2sxjDhFkD1ukFIF/DAJbqG0LxjiQjmPLk+kRDy4EPqQkxmKpEEnLNXxV0gcC+Ft7ubc263K1BXqwnSigZWnRK7L2g4BNNE47NG0aIzHE2Y8RMn9tBkb8vTVljn7NdTamonFu3+68QXBhAM=
+  on:
+    branch: master
+    tags: true
