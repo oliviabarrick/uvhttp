@@ -4,6 +4,8 @@
 
 See their [blog](https://magic.io/blog/uvloop-blazing-fast-python-networking/) for details.
 
+Read the full documentation on [readthedocs](https://uvhttp.readthedocs.io/en/latest/index.html).
+
 # Installation
 
 To install:

@@ -4,3 +4,11 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile
+
+  build-docs:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    entrypoint: bash -c 'cd docs && make html'
+    volumes:
+       - ..:/uvhttp
