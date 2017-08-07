@@ -13,7 +13,29 @@ class EOFError(Exception):
 class Session:
     """
     A Session is an HTTP request pool that allows up to request_limit requests
-    in flight at once, with up to conn_limit connections per ip/port.
+    in flight at once, with up to conn_limit connections per ip/port::
+
+        from uvhttp.utils import start_loop
+        import uvhttp.http
+
+        NUM_CONNS_PER_HOST = 10
+
+        @start_loop
+        async def main(loop):
+            session = uvhttp.http.Session(NUM_CONNS_PER_HOST, loop)
+
+            for _ in range(6):
+            response = await session.get(b'http://www.google.com/', headers={
+                b'User-Agent': b'fast-af'
+            })
+
+            print(response.text)
+
+        if __name__ == '__main__':
+            main()
+
+    The module is designed to send HTTP requests very quickly, so all methods
+    require ``bytes`` objects instead of strings.
     """
     def __init__(self, conn_limit, loop):
         self.conn_limit = conn_limit
@@ -22,18 +44,33 @@ class Session:
         self.hosts = {}
 
     async def head(self, url, headers=None, data=None):
+        """
+        Make an HTTP HEAD request to url.
+        """
         return await self.request(b'HEAD', url, headers, data)
 
     async def get(self, url, headers=None, data=None):
+        """
+        Make an HTTP GET request to url.
+        """
         return await self.request(b'GET', url, headers, data)
 
     async def post(self, url, headers=None, data=None):
+        """
+        Make an HTTP POST request to url.
+        """
         return await self.request(b'POST', url, headers, data)
 
     async def put(self, url, headers=None, data=None):
+        """
+        Make an HTTP PUT request to url.
+        """
         return await self.request(b'PUT', url, headers, data)
 
     async def delete(self, url, headers=None, data=None):
+        """
+        Make an HTTP DELETE request to url.
+        """
         return await self.request(b'DELETE', url, headers, data)
 
     async def request(self, method, url, headers=None, data=None):
@@ -77,7 +114,8 @@ class Session:
 
 class HTTPRequest:
     """
-    An HTTP request instantiated from a Session.
+    An HTTP request instantiated from a :class:`.Session`. HTTP requests are returned by the HTTP
+    session once they are sent and contain all information about the request and response.
     """
     def __init__(self, connection):
         self.connection = connection
@@ -145,15 +183,25 @@ class HTTPRequest:
         self.connection.release()
 
     def gzipped(self):
+        """
+        Return true if the response is gzipped.
+        """
         encoding = self.headers[b'content-encoding'] + self.headers[b'transfer-encoding']
         return b'gzip' in encoding or b'deflate' in encoding
 
     def json(self):
+        """
+        Return the JSON decoded version of the body.
+        """
         # TODO: Possibly should use a better library.
         return json.loads(self.text)
 
     @property
     def text(self):
+        """
+        The string representation of the response body. It will be ungzipped
+        and encoded as a unicode string.
+        """
         if self.__text:
             return self.__text
 
@@ -167,6 +215,9 @@ class HTTPRequest:
 
     @property
     def headers(self):
+        """
+        Return the headers from the request in a case-insensitive dictionary.
+        """
         if self.headers_complete and self.__header_dict:
             return self.__header_dict
 

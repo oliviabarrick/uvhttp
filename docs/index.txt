@@ -1,0 +1,71 @@
+Welcome to uvhttp's documentation!
+==================================
+
+uvhttp is an extremely fast HTTP client written in Python. It uses uvloop and outperforms
+all known production-quality Python HTTP clients.
+
+Benchmarks
+----------
+
+All benchmarks running with 8 cores, see `bencher`_.
+
+.. _bencher: https://codesink.net/justin/bencher
+
+uvhttp benchmark::
+
+    ➜  uvhttp git:(master) ✗ ./uvhttp.py
+    100000 HTTP requests in 3.35 seconds, 29836.38 rps
+    ➜  uvhttp git:(master) ✗
+
+asyncio with aiohttp::
+
+    ➜  bencher git:(master) ✗ python3 http_test_asyncio_aiohttp.py
+    10000 HTTP requests in 1.67 seconds, 5991.36 rps
+    ➜  bencher git:(master) ✗
+
+uvloop with aiohttp is still not great::
+
+    ➜  bencher git:(master) ✗ python3 http_test_uvloop_aiohttp.py
+    10000 HTTP requests in 1.97 seconds, 5065.03 rps
+    ➜  bencher git:(master) ✗
+
+gevent is even worse::
+
+    ➜  bencher git:(master) ✗ python3 http_test_gevent.py 
+    10000 HTTP requests in 6.93 seconds, 1443.02 rps
+    ➜  bencher git:(master) ✗ 
+
+We are striving for go performance::
+
+    http_test.go:53: 100000 HTTP requests in 2.274069869 seconds, 43974.02268206211 rps
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Contents:
+
+Installation
+------------
+
+uvhttp requires Python 3.5 or greater and can be installed from pip::
+
+    pip install uvhttp
+
+Usage
+-----
+
+HTTP requests can be made with a Session object.
+
+.. autoclass:: uvhttp.http.Session
+   :members:
+
+The :class:`.Session` object will return an :class:`.HTTPRequest`:
+
+.. autoclass:: uvhttp.http.HTTPRequest
+   :members:
+
+Indices and tables
+==================
+
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`
