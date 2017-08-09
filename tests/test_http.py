@@ -200,4 +200,18 @@ async def test_request_with_dns(loop):
     session = uvhttp.http.Session(10, loop)
 
     response = await session.post(b'http://uvhttp/proxy/echo', data=b'hello')
-    assert response.json()["body"] == 'hello'
+    response_json = response.json()
+    assert_equal(response_json["body"], 'hello')
+    assert_equal(response_json["headers"]["host"], 'uvhttp')
+
+@start_loop
+async def test_request_with_custom_resolver(loop):
+    resolver = uvhttp.dns.Resolver(loop)
+    resolver.add_to_cache(b'other-site', 80, b'127.0.0.1', 80)
+
+    session = uvhttp.http.Session(10, loop, resolver=resolver)
+
+    response = await session.post(b'http://other-site/proxy/echo', data=b'hello')
+    response_json = response.json()
+    assert_equal(response_json["body"], 'hello')
+    assert_equal(response_json["headers"]["host"], 'other-site')

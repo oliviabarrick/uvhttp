@@ -37,9 +37,10 @@ class Session:
     The module is designed to send HTTP requests very quickly, so all methods
     require ``bytes`` objects instead of strings.
     """
-    def __init__(self, conn_limit, loop):
+    def __init__(self, conn_limit, loop, resolver=None):
         self.conn_limit = conn_limit
         self.loop = loop
+        self.resolver = resolver
 
         self.hosts = {}
 
@@ -96,7 +97,7 @@ class Session:
 
         session = self.hosts.get(addr)
         if not session:
-            session = pool.Pool(host, port, self.conn_limit, self.loop)
+            session = pool.Pool(host, port, self.conn_limit, self.loop, resolver=self.resolver)
             self.hosts[addr] = session
 
         # Create and send the new HTTP request.
