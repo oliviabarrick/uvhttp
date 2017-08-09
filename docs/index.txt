@@ -63,6 +63,11 @@ The :class:`.Session` object will return an :class:`.HTTPRequest`:
 .. autoclass:: uvhttp.http.HTTPRequest
    :members:
 
+You can also pass a :class:`.Resolver` to the :class:`.Session`:
+
+.. autoclass:: uvhttp.dns.Resolver
+   :members:
+
 Indices and tables
 ==================
 
