@@ -46,37 +46,44 @@ class Session:
 
     async def head(self, *args, **kwargs):
         """
-        Make an HTTP HEAD request to url.
+        Make an HTTP HEAD request to url, see :meth:`.head`.
         """
         return await self.request(b'HEAD', *args, **kwargs)
 
     async def get(self, *args, **kwargs):
         """
-        Make an HTTP GET request to url.
+        Make an HTTP GET request to url, see :meth:`.request`.
         """
         return await self.request(b'GET', *args, **kwargs)
 
     async def post(self, *args, **kwargs):
         """
-        Make an HTTP POST request to url.
+        Make an HTTP POST request to url, see :meth:`.request`.
         """
         return await self.request(b'POST', *args, **kwargs)
 
     async def put(self, *args, **kwargs):
         """
-        Make an HTTP PUT request to url.
+        Make an HTTP PUT request to url, see :meth:`.request`.
         """
         return await self.request(b'PUT', *args, **kwargs)
 
     async def delete(self, *args, **kwargs):
         """
-        Make an HTTP DELETE request to url.
+        Make an HTTP DELETE request to url, see :meth:`.request`.
         """
         return await self.request(b'DELETE', *args, **kwargs)
 
     async def request(self, method, url, headers=None, data=None, ssl=None):
         """
         Make a new HTTP request in the pool.
+
+        ``headers`` can be passed as a dictionary of :class:`byte` (not :class:`str`).
+
+        ``data`` is a byte array of data to include in the request.
+
+        ``ssl`` can be a :class:`ssl.SSLContext` or True and must match
+        the schema in the URL.
         """
 
         # Parse the URL for the hostname, port, and query string.
