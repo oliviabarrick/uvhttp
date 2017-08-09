@@ -1,4 +1,7 @@
 import asyncio
+import socket
+import uvhttp.dns
+import uvhttp.utils
 import uvloop
 asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
@@ -82,7 +85,7 @@ class Pool:
     A connection pool for a single host and port. It allows up to conn_limit
     connections to a single host at once.
     """
-    def __init__(self, host, port, conn_limit, loop):
+    def __init__(self, host, port, conn_limit, loop, resolver=None, ipv6=True):
         self.conn_limit = conn_limit
 
         self.host = host
@@ -94,6 +97,9 @@ class Pool:
         self.pool_available = asyncio.Semaphore(self.conn_limit, loop=loop)
         self.pool_lock = asyncio.Lock(loop=loop)
 
+        self.resolver = resolver or uvhttp.dns.Resolver(loop, ipv6=ipv6)
+        self.use_resolver = not uvhttp.utils.is_ip(host)
+
     async def connect(self):
         """
         Waits for an available connection and then returns a connection object
@@ -104,7 +110,12 @@ class Pool:
         c = None
 
         if len(self.pool) < self.conn_limit:
-            c = Connection(self.host, self.port, self.pool_available, self.loop)
+            if self.use_resolver:
+                host, port, ttl = await self.resolver.resolve(self.host, self.port)
+            else:
+                host, port = self.host, self.port
+
+            c = Connection(host, port, self.pool_available, self.loop)
             c.locked = True
             self.pool.append(c)
         else:

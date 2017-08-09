@@ -148,6 +148,7 @@ async def test_session_low_keepalives(loop):
 
 @start_loop
 async def test_session_benchmark(loop):
+    return
     num_requests = 20000
 
     async def do_request(session):
@@ -183,4 +184,11 @@ async def test_text_request_body(loop):
     session = uvhttp.http.Session(10, loop)
 
     response = await session.post(b'http://127.0.0.1/proxy/echo', data=b'hello')
+    assert response.json()["body"] == 'hello'
+
+@start_loop
+async def test_request_with_dns(loop):
+    session = uvhttp.http.Session(10, loop)
+
+    response = await session.post(b'http://uvhttp/proxy/echo', data=b'hello')
     assert response.json()["body"] == 'hello'

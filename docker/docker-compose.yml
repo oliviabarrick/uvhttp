@@ -1,9 +1,13 @@
 version: '2'
 services:
   uvhttp:
+    container_name: uvhttp
+    hostname: uvhttp
     build:
       context: ..
       dockerfile: docker/Dockerfile
+    networks:
+      uvhttp:
 
   build-docs:
     build:
@@ -12,3 +16,8 @@ services:
     entrypoint: bash -c 'cd docs && make html'
     volumes:
        - ..:/uvhttp
+    networks:
+      uvhttp:
+
+networks:
+  uvhttp:
