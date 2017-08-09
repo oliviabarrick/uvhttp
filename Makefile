@@ -5,4 +5,4 @@ build:
 
 .PHONY: test
 test: build
-	docker-compose -f docker/docker-compose.yml up
+	docker-compose -f docker/docker-compose.yml up uvhttp

@@ -124,6 +124,9 @@ class HTTPRequest:
         """
         Send the request (usually called by the Session object).
         """
+        self.__keep_alive = None
+        self.__gzipped = None
+
         self.headers_complete = False
         self.contains_body = False
         self.body_done = True
@@ -180,14 +183,29 @@ class HTTPRequest:
         Closes the request, signalling that we're done with the request. The
         connection is kept open and released back to the pool for re-use.
         """
+        if not self.keep_alive:
+            self.connection.close()
+
         self.connection.release()
 
+    @property
+    def keep_alive(self):
+        if self.__keep_alive == None:
+            connection = self.headers[b'connection']
+            self.__keep_alive = not connection or connection != b'close'
+
+        return self.__keep_alive
+
+    @property
     def gzipped(self):
         """
         Return true if the response is gzipped.
         """
-        encoding = self.headers[b'content-encoding'] + self.headers[b'transfer-encoding']
-        return b'gzip' in encoding or b'deflate' in encoding
+        if self.__gzipped == None:
+            encoding = self.headers[b'content-encoding'] + self.headers[b'transfer-encoding']
+            self.__gzipped = b'gzip' in encoding or b'deflate' in encoding
+
+        return self.__gzipped
 
     def json(self):
         """
@@ -205,7 +223,7 @@ class HTTPRequest:
         if self.__text:
             return self.__text
 
-        if self.gzipped():
+        if self.gzipped:
             self.__text = zlib.decompress(self.content, 16 + zlib.MAX_WBITS)
         else:
             self.__text = self.content
@@ -225,6 +243,7 @@ class HTTPRequest:
         return self.__header_dict
 
     def on_header(self, name, value):
+
         self.__headers[name] = value
 
     def on_body(self, body):
