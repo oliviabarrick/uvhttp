@@ -88,7 +88,7 @@ class Resolver:
                 pass
             else:
                 for response in responses:
-                    self.add_to_cache(host, port, response.host, port)
+                    self.add_to_cache(host, port, response.host, response.ttl, port=port)
                 break
 
         response = self.fetch_from_cache(host, port)

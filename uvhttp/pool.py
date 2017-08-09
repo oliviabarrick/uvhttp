@@ -3,6 +3,7 @@ import socket
 import uvhttp.dns
 import uvhttp.utils
 import uvloop
+
 asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
 class Connection:
@@ -11,7 +12,7 @@ class Connection:
     the connection is locked until release() is called, when it will be
     released back into the pool.
     """
-    def __init__(self, host, port, pool_available, loop):
+    def __init__(self, host, port, pool_available, loop, ssl=None):
         self.loop = loop
 
         # Semaphore used by the Pool to determine if any connections are
@@ -29,6 +30,8 @@ class Connection:
         self.host = host
         self.port = port
 
+        self.ssl = ssl
+
         # Number of reconnects made. Used to determine pool efficiency.
         self.connect_count = 0
 
@@ -38,7 +41,7 @@ class Connection:
         connection has not established yet or we disconnected.
         """
         self.connect_count += 1
-        self.reader, self.writer = await asyncio.open_connection(self.host, self.port, loop=self.loop)
+        self.reader, self.writer = await asyncio.open_connection(self.host, self.port, loop=self.loop, ssl=self.ssl)
 
     async def read(self, num_bytes):
         """
@@ -84,8 +87,12 @@ class Pool:
     """
     A connection pool for a single host and port. It allows up to conn_limit
     connections to a single host at once.
+
+    A :class:`uvhttp.dns.Resolver` can be passed or one will be created.
+
+    A :class:`ssl.SSLContext` can also be passed or SSL will not be used.
     """
-    def __init__(self, host, port, conn_limit, loop, resolver=None, ipv6=True):
+    def __init__(self, host, port, conn_limit, loop, resolver=None, ipv6=True, ssl=None):
         self.conn_limit = conn_limit
 
         self.host = host
@@ -99,6 +106,8 @@ class Pool:
 
         self.resolver = resolver or uvhttp.dns.Resolver(loop, ipv6=ipv6)
         self.use_resolver = not uvhttp.utils.is_ip(host)
+
+        self.ssl = ssl
 
     async def connect(self):
         """
@@ -115,7 +124,7 @@ class Pool:
             else:
                 host, port = self.host, self.port
 
-            c = Connection(host, port, self.pool_available, self.loop)
+            c = Connection(host, port, self.pool_available, self.loop, ssl=self.ssl)
             c.locked = True
             self.pool.append(c)
         else:

@@ -1,6 +1,7 @@
 import uvhttp.pool
 import asyncio
 import functools
+import ssl
 import time
 
 HEAD = b'HEAD / HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n'
@@ -231,3 +232,23 @@ async def test_pool_benchmark(loop):
     print('Test time: {}s, {} rps'.format(duration, num_requests / duration))
 
     assert await pool.stats() == 10
+
+@start_loop
+async def test_pool_with_ssl(loop):
+    ssl_ctx = ssl.create_default_context()
+    ssl_ctx.check_hostname = False
+    ssl_ctx.verify_mode = ssl.CERT_NONE
+
+    pool = uvhttp.pool.Pool('127.0.0.1', 443, 2, loop, ssl=ssl_ctx)
+
+    conn = await pool.connect()
+
+    assert await pool.stats() == 0
+
+    await conn.send(HEAD)
+    response = await conn.read(65535)
+    assert response[:len(STATUS_200)] == STATUS_200
+
+    assert await pool.stats() == 1
+
+    conn.release()

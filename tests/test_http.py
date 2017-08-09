@@ -6,6 +6,7 @@ import asyncio
 import functools
 import time
 import hashlib
+import ssl
 import zlib
 
 def md5(data):
@@ -215,3 +216,17 @@ async def test_request_with_custom_resolver(loop):
     response_json = response.json()
     assert_equal(response_json["body"], 'hello')
     assert_equal(response_json["headers"]["host"], 'other-site')
+
+@start_loop
+async def test_request_with_ssl(loop):
+    ssl_ctx = ssl.create_default_context()
+    ssl_ctx.check_hostname = False
+    ssl_ctx.verify_mode = ssl.CERT_NONE
+
+    session = uvhttp.http.Session(10, loop)
+
+    response = await session.post(b'https://uvhttp/proxy/echo', data=b'hello', ssl=ssl_ctx)
+    response_json = response.json()
+    assert_equal(response_json["body"], 'hello')
+    assert_equal(response_json["headers"]["host"], 'uvhttp')
+
