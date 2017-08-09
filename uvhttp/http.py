@@ -44,37 +44,37 @@ class Session:
 
         self.hosts = {}
 
-    async def head(self, url, headers=None, data=None):
+    async def head(self, *args, **kwargs):
         """
         Make an HTTP HEAD request to url.
         """
-        return await self.request(b'HEAD', url, headers, data)
+        return await self.request(b'HEAD', *args, **kwargs)
 
-    async def get(self, url, headers=None, data=None):
+    async def get(self, *args, **kwargs):
         """
         Make an HTTP GET request to url.
         """
-        return await self.request(b'GET', url, headers, data)
+        return await self.request(b'GET', *args, **kwargs)
 
-    async def post(self, url, headers=None, data=None):
+    async def post(self, *args, **kwargs):
         """
         Make an HTTP POST request to url.
         """
-        return await self.request(b'POST', url, headers, data)
+        return await self.request(b'POST', *args, **kwargs)
 
-    async def put(self, url, headers=None, data=None):
+    async def put(self, *args, **kwargs):
         """
         Make an HTTP PUT request to url.
         """
-        return await self.request(b'PUT', url, headers, data)
+        return await self.request(b'PUT', *args, **kwargs)
 
-    async def delete(self, url, headers=None, data=None):
+    async def delete(self, *args, **kwargs):
         """
         Make an HTTP DELETE request to url.
         """
-        return await self.request(b'DELETE', url, headers, data)
+        return await self.request(b'DELETE', *args, **kwargs)
 
-    async def request(self, method, url, headers=None, data=None):
+    async def request(self, method, url, headers=None, data=None, ssl=None):
         """
         Make a new HTTP request in the pool.
         """
@@ -82,9 +82,15 @@ class Session:
         # Parse the URL for the hostname, port, and query string.
         parsed_url = parse_url(url)
 
+        use_ssl = parsed_url.schema == b'https'
+        if not use_ssl:
+            ssl = None
+        else:
+            ssl = ssl or True
+
         port = parsed_url.port
         if not port:
-            port = 443 if parsed_url.schema == b'https' else 80
+            port = 443 if use_ssl else 80
 
         host = parsed_url.host
 
@@ -97,7 +103,7 @@ class Session:
 
         session = self.hosts.get(addr)
         if not session:
-            session = pool.Pool(host, port, self.conn_limit, self.loop, resolver=self.resolver)
+            session = pool.Pool(host, port, self.conn_limit, self.loop, resolver=self.resolver, ssl=ssl)
             self.hosts[addr] = session
 
         # Create and send the new HTTP request.

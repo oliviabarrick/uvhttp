@@ -3,6 +3,7 @@ import socket
 import uvhttp.dns
 import uvhttp.utils
 import uvloop
+
 asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
 class Connection:

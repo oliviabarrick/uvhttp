@@ -73,3 +73,15 @@ async def test_resolve(loop):
     result = await resolver.resolve('uvhttp', 80)
 
     assert_equal(result[:2], (uvhttp_addr, 80))
+
+@start_loop
+async def test_resolve_https(loop):
+    resolvers = parse_resolv_conf()
+
+    uvhttp_addr = socket.gethostbyname('uvhttp')
+
+    resolver = uvhttp.dns.Resolver(loop, nameservers=[resolvers[0]])
+
+    result = await resolver.resolve('uvhttp', 443)
+
+    assert_equal(result[:2], (uvhttp_addr, 443))
