@@ -2,6 +2,7 @@ import asyncio
 import functools
 import multiprocessing
 import os
+import socket
 
 NUM_WORKERS = int(os.getenv("GOMAXPROCS", multiprocessing.cpu_count() * 2))
 
@@ -26,6 +27,25 @@ def run_workers(func):
             proc.join()
     else:
         func()
+
+def is_ip(host):
+    """
+    Return True if ``host`` is an IPv4 or IPv6 address.
+    """
+    if isinstance(host, bytes):
+        host = host.decode()
+
+    try:
+        socket.inet_pton(socket.AF_INET, host)
+        return True
+    except socket.error:
+        pass
+
+    try:
+        socket.inet_pton(socket.AF_INET6, host)
+        return True
+    except socket.error:
+        return False
 
 class HeaderDict:
     def __init__(self, original):
