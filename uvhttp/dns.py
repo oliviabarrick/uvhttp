@@ -76,9 +76,6 @@ class Resolver:
         if cached:
             return cached
 
-        addr_pair = (host, port)
-        if addr_pair in self.cached:
-            self.c
         if self.ipv6:
             query_types = ['AAAA', 'A']
         else:
