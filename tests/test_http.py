@@ -1,3 +1,4 @@
+from nose.tools import *
 from uvhttp.utils import start_loop
 import uvhttp.http
 import uvhttp.pool
@@ -133,18 +134,26 @@ async def test_session(loop):
     assert await session.connections() == 3
 
 @start_loop
+async def test_session_no_keepalives(loop):
+    session = uvhttp.http.Session(1, loop)
+
+    for _ in range(6):
+        response = await session.request(b'HEAD', b'http://127.0.0.1/no_keepalive')
+        assert response.status_code == 200
+
+    connections = await session.connections()
+    assert_equal(connections, 6)
+
+@start_loop
 async def test_session_low_keepalives(loop):
     session = uvhttp.http.Session(1, loop)
 
     for _ in range(6):
-        try:
-            response = await session.request(b'HEAD', b'http://127.0.0.1/low_keepalive')
-        except uvhttp.http.EOFError:
-            continue
-
+        response = await session.request(b'HEAD', b'http://127.0.0.1/low_keepalive')
         assert response.status_code == 200
 
-    assert await session.connections() == 2
+    connections = await session.connections()
+    assert_equal(connections, 3)
 
 @start_loop
 async def test_session_benchmark(loop):
