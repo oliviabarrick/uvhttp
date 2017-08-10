@@ -6,6 +6,8 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile
+    volumes:
+      - ../build_results:/build_results:rw
     networks:
       uvhttp:
 
