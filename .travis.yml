@@ -1,11 +1,12 @@
 language: python
 python:
-  - "3.5"
+- '3.5'
 sudo: required
 services:
-  - docker
+- docker
 script:
-  - make test
+- make test
+- pip install codacy-coverage && python-codacy-coverage -r build_results/coverage.xml
 deploy:
   provider: pypi
   user: justinbarrick
@@ -14,3 +15,6 @@ deploy:
   on:
     branch: master
     tags: true
+env:
+  global:
+    secure: aYXvnUqSITWiz7CZV8xFjgCsd9v3deHg6AbPHWX9C87Ez6Drdd5YMbnsXLecxohzNSvJtt965QrORVoAmpOipNtP4JPXro6UyUzWEpd4CpxXxtbJnCNjktMVfnQUNMWW+Nstpu8GJmxYKOVX6Cu1DGFERhTRUgFV801fNNFxjSSxgikK/E8Ua07Ear1U6qLkmt/tOyIt9i92PJYv/R72lxGi/q0JpkWW+TqkRjj6mUs4gaAfRVzm/IYQNFBcBEY3IkCf+DKiEPVEY28NdnZ06UB2SqDKbBysE/1lEhPr3L3h4ZVNnfHyIejw6cilbUJZ0gVD9n6FBRXWbPcDd+9t743dsn+2VUEJI++T1QNgrMFjjjJ0E6jN3Rf6vpJRMIp/VnMpNeXe74Wi9m5rWUyDwRLPaiHok04SXoIbScROZ2W9BlntBXM0/zyxky/vnSt3DdfJ8fBMQHcVHrdpPofx8jA54Aq7U/iAQk8P7ncCBwNkRWQRguCwwBUxENdp341yx4ufdYNmq/pSuHUiAo8jAGT9k6TarYdVGEK423dzM/iX5k4bNBhlzIkHYcoQacvFV7ratG/SwkFYHXn9bW51C7b/fiMGz60zSOQcddjNUdEATHYM6DJaDgHxXF2Ziplu1+xFlIF2ZItXFBfH+9e+bBYDMt5XIBIfLQPt/Kp7PKI=
