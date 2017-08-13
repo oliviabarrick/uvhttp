@@ -3,6 +3,9 @@ import functools
 import multiprocessing
 import os
 import socket
+from json import loads
+from sanic import Sanic
+from sanic.response import json
 
 NUM_WORKERS = int(os.getenv("GOMAXPROCS", multiprocessing.cpu_count() * 2))
 
@@ -67,3 +70,82 @@ class HeaderDict:
     def items(self):
         for key, value in self.__dict.items:
             yield value
+
+class HttpServer:
+    """
+    An HTTP server that uses Sanic in the backend to help write unit
+    tests.
+    """
+    def __init__(self, host=None, port=None):
+        self.app = Sanic(__name__)
+        self.app.config.LOGO = None
+
+        self.host = host or '127.0.0.1'
+        self.port = port or 8089
+
+        self.add_routes()
+
+    @property
+    def url(self):
+        """
+        Return the URL of the started server.
+        """
+        return 'http://{}:{}/'.format(self.host, self.port).encode()
+
+    async def start(self):
+        """
+        Start the server.
+        """
+        self.server = await self.app.create_server(host=self.host, port=self.port)
+
+    def stop(self):
+        """
+        Stop the server
+        """
+        self.server.close()
+
+    def add_routes(self):
+        """
+        A function for adding all of the routes you need. Implement
+        this in your inherited class to add your endpoints.
+        """
+        self.app.add_route(self.echo, "echo", [ 'GET', 'POST' ])
+
+    async def echo(self, request):
+        """
+        An echo endpoint that returns all of the data about the request.
+        """
+        try:
+            parsed_json = loads(request.body)
+        except (ValueError, TypeError):
+            parsed_json = None
+
+        return json({
+            "form": request.form,
+            "body": request.body,
+            "args": request.args,
+            "url": request.url,
+            "query": request.query_string,
+            "json": parsed_json,
+            "headers": request.headers
+        })
+
+def http_server(http_server_cls, *server_args, **server_kwargs):
+    """
+    Start a :class:`.HttpServer` and an event loop for use in a test case.
+    """
+    def http_server_wrapper(func):
+        @functools.wraps(func)
+        @start_loop
+        async def real_http_server_wrapper(loop, *args, **kwargs):
+            server = http_server_cls(*server_args, **server_kwargs)
+            await server.start()
+
+            try:
+                await func(server, loop, *args, **kwargs)
+            finally:
+                server.stop()
+
+        return real_http_server_wrapper
+
+    return http_server_wrapper
