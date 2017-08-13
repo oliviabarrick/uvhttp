@@ -3,6 +3,7 @@ import functools
 import multiprocessing
 import os
 import socket
+import ssl
 from json import loads
 from sanic import Sanic
 from sanic.response import json
@@ -76,12 +77,14 @@ class HttpServer:
     An HTTP server that uses Sanic in the backend to help write unit
     tests.
     """
-    def __init__(self, host=None, port=None):
+    def __init__(self, host=None, port=None, https_host=None, https_port=None):
         self.app = Sanic(__name__)
         self.app.config.LOGO = None
 
         self.host = host or '127.0.0.1'
         self.port = port or 8089
+        self.https_host = https_host or '127.0.0.1'
+        self.https_port = https_port or 8090
 
         self.add_routes()
 
@@ -92,17 +95,32 @@ class HttpServer:
         """
         return 'http://{}:{}/'.format(self.host, self.port).encode()
 
+    @property
+    def https_url(self):
+        """
+        Return the HTTPS URL of the started server.
+        """
+        return 'https://{}:{}/'.format(self.https_host, self.https_port).encode()
+
     async def start(self):
         """
         Start the server.
         """
         self.server = await self.app.create_server(host=self.host, port=self.port)
 
+        pem = os.path.join(os.path.dirname(__file__), 'example.pem')
+
+        ctx = ssl.create_default_context(purpose=ssl.Purpose.CLIENT_AUTH)
+        ctx.load_cert_chain(pem)
+
+        self.https_server = await self.app.create_server(host=self.https_host, port=self.https_port, ssl=ctx)
+
     def stop(self):
         """
         Stop the server
         """
         self.server.close()
+        self.https_server.close()
 
     def add_routes(self):
         """
