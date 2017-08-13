@@ -72,6 +72,10 @@ class HeaderDict:
             yield value
 
 class HttpServer:
+    """
+    An HTTP server that uses Sanic in the backend to help write unit
+    tests.
+    """
     def __init__(self, host=None, port=None):
         self.app = Sanic(__name__)
         self.app.config.LOGO = None
@@ -83,18 +87,34 @@ class HttpServer:
 
     @property
     def url(self):
+        """
+        Return the URL of the started server.
+        """
         return 'http://{}:{}/'.format(self.host, self.port).encode()
 
     async def start(self):
+        """
+        Start the server.
+        """
         self.server = await self.app.create_server(host=self.host, port=self.port)
 
     def stop(self):
+        """
+        Stop the server
+        """
         self.server.close()
 
     def add_routes(self):
+        """
+        A function for adding all of the routes you need. Implement
+        this in your inherited class to add your endpoints.
+        """
         self.app.add_route(self.echo, "echo", [ 'GET', 'POST' ])
 
     async def echo(self, request):
+        """
+        An echo endpoint that returns all of the data about the request.
+        """
         try:
             parsed_json = loads(request.body)
         except (ValueError, TypeError):
@@ -111,6 +131,9 @@ class HttpServer:
         })
 
 def http_server(http_server_cls, *server_args, **server_kwargs):
+    """
+    Start a :class:`.HttpServer` and an event loop for use in a test case.
+    """
     def http_server_wrapper(func):
         @functools.wraps(func)
         @start_loop

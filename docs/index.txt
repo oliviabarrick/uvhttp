@@ -68,6 +68,28 @@ You can also pass a :class:`.Resolver` to the :class:`.Session`:
 .. autoclass:: uvhttp.dns.Resolver
    :members:
 
+Tests
+-----
+
+It also provides a wrapper around Sanic that makes it easier to use in
+writing unit tests for uvhttp.
+
+.. autoclass:: uvhttp.utils.HttpServer
+   :members:
+
+An example of the usage is::
+
+    import uvhttp.http
+    from uvhttp.utils import http_server, HttpServer
+    from nose.tools import assert_equal
+
+    @http_server(HttpServer)
+    async def test_test_server(server, loop):
+        session = uvhttp.http.Session(10, loop)
+
+        response = await session.get(server.url + b'echo')
+        assert_equal(response.json()['url'], 'http://127.0.0.1/echo')
+
 Indices and tables
 ==================
 
