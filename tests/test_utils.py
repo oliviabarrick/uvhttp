@@ -22,6 +22,6 @@ async def test_test_https_server(server, loop):
     ctx = ssl.create_default_context()
     ctx.check_hostname = False
     ctx.verify_mode = ssl.CERT_NONE
- 
+
     response = await session.get(server.https_url + b'echo', ssl=ctx)
     assert_equal(response.json()['url'], 'https://127.0.0.1/echo')
