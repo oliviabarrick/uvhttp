@@ -1,1 +1,2 @@
 include requirements.txt
+include uvhttp/example.pem
