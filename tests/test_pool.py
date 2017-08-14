@@ -252,3 +252,21 @@ async def test_pool_with_ssl(loop):
     assert await pool.stats() == 1
 
     conn.release()
+
+@start_loop
+async def test_pool_with_ssl_verification(loop):
+    ssl_ctx = ssl.create_default_context()
+    ssl_ctx.load_verify_locations('uvhttp/example.pem')
+
+    pool = uvhttp.pool.Pool('uvhttp', 443, 2, loop, ssl=ssl_ctx)
+
+    conn = await pool.connect()
+    assert await pool.stats() == 0
+
+    await conn.send(HEAD)
+    response = await conn.read(65535)
+    assert response[:len(STATUS_200)] == STATUS_200
+
+    assert await pool.stats() == 1
+
+    conn.release()
