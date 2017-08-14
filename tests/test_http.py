@@ -230,3 +230,14 @@ async def test_request_with_ssl(loop):
     assert_equal(response_json["body"], 'hello')
     assert_equal(response_json["headers"]["host"], 'uvhttp')
 
+@start_loop
+async def test_request_with_ssl_verification(loop):
+    ssl_ctx = ssl.create_default_context()
+    ssl_ctx.load_verify_locations('uvhttp/example.pem')
+
+    session = uvhttp.http.Session(10, loop)
+
+    response = await session.post(b'https://uvhttp/proxy/echo', data=b'hello', ssl=ssl_ctx)
+    response_json = response.json()
+    assert_equal(response_json["body"], 'hello')
+    assert_equal(response_json["headers"]["host"], 'uvhttp')

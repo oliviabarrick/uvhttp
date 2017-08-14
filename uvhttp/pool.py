@@ -12,7 +12,7 @@ class Connection:
     the connection is locked until release() is called, when it will be
     released back into the pool.
     """
-    def __init__(self, host, port, pool_available, loop, ssl=None):
+    def __init__(self, host, port, pool_available, loop, ssl=None, hostname=None):
         self.loop = loop
 
         # Semaphore used by the Pool to determine if any connections are
@@ -31,6 +31,10 @@ class Connection:
         self.port = port
 
         self.ssl = ssl
+        if self.ssl:
+            self.hostname = hostname
+        else:
+            self.hostname = None
 
         # Number of reconnects made. Used to determine pool efficiency.
         self.connect_count = 0
@@ -41,7 +45,8 @@ class Connection:
         connection has not established yet or we disconnected.
         """
         self.connect_count += 1
-        self.reader, self.writer = await asyncio.open_connection(self.host, self.port, loop=self.loop, ssl=self.ssl)
+        self.reader, self.writer = await asyncio.open_connection(self.host, self.port, loop=self.loop,
+                ssl=self.ssl, server_hostname=self.hostname)
 
     async def read(self, num_bytes):
         """
@@ -124,7 +129,7 @@ class Pool:
             else:
                 host, port = self.host, self.port
 
-            c = Connection(host, port, self.pool_available, self.loop, ssl=self.ssl)
+            c = Connection(host, port, self.pool_available, self.loop, ssl=self.ssl, hostname=self.host)
             c.locked = True
             self.pool.append(c)
         else:
