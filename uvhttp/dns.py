@@ -87,6 +87,10 @@ class Resolver:
             except aiodns.error.DNSError as e:
                 pass
             else:
+                # sometimes the resolver returns an empty list and I don't know why.
+                if not responses:
+                    continue
+
                 for response in responses:
                     self.add_to_cache(host, port, response.host, response.ttl, port=port)
                 break
