@@ -167,3 +167,22 @@ def http_server(http_server_cls, *server_args, **server_kwargs):
         return real_http_server_wrapper
 
     return http_server_wrapper
+
+def http_server_no_loop(http_server_cls, *server_args, **server_kwargs):
+    """
+    Start a :class:`.HttpServer` for use in a test case.
+    """
+    def http_server_wrapper(func):
+        @functools.wraps(func)
+        async def real_http_server_wrapper(*args, **kwargs):
+            server = http_server_cls(*server_args, **server_kwargs)
+            await server.start()
+
+            try:
+                await func(server, *args, **kwargs)
+            finally:
+                server.stop()
+
+        return real_http_server_wrapper
+
+    return http_server_wrapper
