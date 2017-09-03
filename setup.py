@@ -5,7 +5,7 @@ requirements = os.path.join(os.path.dirname(__file__), 'requirements.txt')
 
 setup(
     name='uvhttp',
-    version='1.13',
+    version='1.16',
     description='High performance Python HTTP client',
     url='https://github.com/justinbarrick/uvhttp',
     package_data={'uvhttp': ['example.pem']},
