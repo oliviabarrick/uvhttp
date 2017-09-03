@@ -178,8 +178,8 @@ class HTTPRequest:
         try:
             await self.fetch()
         except EOFError as e:
-            if self.headers[b'connection'] or self.headers[b'transfer-encoding'] \
-              or self.headers[b'content-encoding'] or self.headers['content-length']:
+            if self.headers[b'transfer-encoding'] \
+              or self.headers[b'content-encoding'] or self.headers[b'content-length']:
                 raise e
 
         self.status_code = self.parser.get_status_code()
